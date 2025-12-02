@@ -1,0 +1,27 @@
+[
+  {
+    "year": 1991,
+    "event": "🚨 苏联解体：导致俄罗斯及其前加盟共和国经济剧烈动荡，GDP大幅下降。",
+    "highlight_country": "俄罗斯"
+  },
+  {
+    "year": 2001,
+    "event": "📉 9/11 事件：对美国经济造成短期冲击，全球航空和旅游业受到影响。",
+    "highlight_country": "美国"
+  },
+  {
+    "year": 2008,
+    "event": "💥 全球金融危机：源自美国次贷危机，波及全球主要发达国家，各国GDP普遍下滑。",
+    "highlight_country": "全球"
+  },
+  {
+    "year": 2020,
+    "event": "🦠 COVID-19 疫情：全球经济活动停摆，绝大多数国家GDP出现负增长。",
+    "highlight_country": "全球"
+  },
+  {
+    "year": 2001,
+    "event": "🚀 中国加入 WTO：极大地推动了中国出口贸易和经济增长，GDP增速加快。",
+    "highlight_country": "中国"
+  }
+]

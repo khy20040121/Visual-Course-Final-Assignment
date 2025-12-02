@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>世界各国 GDP 动态可视化分析</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/topojson@3"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>🏆 世界各国 GDP 动态排名与深度分析 (1990-2023)</h1>
+        <p>数据驱动的宏观经济变化可视化</p>
+    </header>
+
+    <div class="container">
+
+        <section class="controls-panel">
+            <div class="control-group">
+                <label for="speed-select">动画速度 (年/秒):</label>
+                <select id="speed-select">
+                    <option value="1000">1.0</option>
+                    <option value="500" selected>2.0 (默认)</option>
+                    <option value="250">4.0</option>
+                    <option value="100">10.0 (极快)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <button id="start-btn">▶️ 开始播放</button>
+                <button id="pause-btn" style="display: none;">⏸️ 暂停</button>
+                <button id="reset-btn">🔄 重置</button>
+            </div>
+            <div class="control-group">
+                <label for="year-slider">年份选择:</label>
+                <input type="range" id="year-slider" min="1990" max="2023" step="1" value="1990">
+                <span id="current-year-display">1990</span>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <h2>🌍 世界主要国家 GDP 排名前十动态变化</h2>
+            <div id="chart">
+                <div id="year-label">1990</div>
+                <div id="event-annotation" class="annotation"></div>
+            </div>
+        </section>
+
+        <section class="detail-section">
+            
+            <div class="card" id="line-chart-section">
+                <h2>📊 选定国家 GDP 变化柱状图 (万亿美元)</h2>
+                <div class="line-chart-controls">
+                    <label>选择国家 (可多选):</label>
+                    <select id="country-select" multiple size="5"></select>
+                    <button id="draw-line-chart">绘制柱状图</button>
+                </div>
+                <div id="line-chart"></div>
+            </div>
+
+            <div class="card" id="china-gdp-analysis">
+                <h2>🇨🇳 中国 GDP 细致分析 (万亿美元)</h2>
+                <h3>按年份查看中国 GDP 增长</h3>
+                <div class="line-chart-controls">
+                    <label for="china-start-year">起始年份:</label>
+                    <select id="china-start-year"></select>
+                    <label for="china-end-year">结束年份:</label>
+                    <select id="china-end-year"></select>
+                    <button id="draw-china-chart">查看变化</button>
+                </div>
+                <div id="china-line-chart"></div>
+            </div>
+
+            <div class="card" id="china-provinces-gdp">
+                <h2>🗺️ 中国各省 GDP 组成分析 (万亿美元)</h2>
+                <h3>按年份查看各省 GDP 分布</h3>
+                <div class="line-chart-controls">
+                    <label for="province-year-select">选择年份:</label>
+                    <select id="province-year-select"></select>
+                    <button id="draw-province-chart">显示分布</button>
+                    <button id="toggle-province-view">切换视图</button>
+                </div>
+                <div id="province-chart"></div>
+            </div>
+
+            <div class="card" id="world-map-gdp">
+                <h2>🌍 世界地图 GDP 可视化 (万亿美元)</h2>
+                <h3>按年份查看各国 GDP 分布</h3>
+                <div class="line-chart-controls">
+                    <label for="map-year-select">选择年份:</label>
+                    <select id="map-year-select"></select>
+                    <button id="draw-map">显示地图</button>
+                    <button id="reset-map-zoom">重置缩放</button>
+                </div>
+                <div id="map-legend"></div>
+                <div id="world-map-chart"></div>
+                <div id="map-tooltip" class="tooltip"></div>
+            </div>
+
+        </section>
+
+    </div> <script>
+        const WIDTH = 900;
+        const HEIGHT = 400;
+        const MARGIN = { top: 20, right: 30, bottom: 40, left: 60 }; // 调整底部裕量以容纳旋转的年份标签
+        const NUM_BARS = 10; // 只显示前10名
+
+        let data = [];
+        let events = [];
+        let provincesData = [];
+        let countryNameMapping = {};
+        let worldMapData = null;
+        let yearIndex = 0;
+        let timer = null;
+        let intervalTime = 500; // 默认 2.0 年/秒
+        let provinceViewMode = 'bar'; // 'bar' 或 'pie'
+        let mapZoom = null;
+
+        const svg = d3.select("#chart").append("svg")
+            .attr("viewBox", `0 0 ${WIDTH} ${HEIGHT}`)
+            .attr("width", "100%")
+            .attr("height", "100%");
+
+        const x = d3.scaleLinear().range([MARGIN.left, WIDTH - MARGIN.right]);
+        const y = d3.scaleBand()
+            .range([MARGIN.top, HEIGHT - MARGIN.bottom])
+            .padding(0.1);
+        
+        // --- 工具函数: 格式化 GDP 值 ---
+        const formatGDP = (d) => `${d.toFixed(2)} T`; // 保留两位小数，单位为 T (万亿美元)
+
+        // --- 数据加载与初始化 ---
+        async function loadData() {
+            try {
+                data = await d3.json("data.json");
+                events = await d3.json("events.json");
+                
+                // 加载国家名称映射
+                try {
+                    countryNameMapping = await d3.json("country-name-mapping.json");
+                } catch (error) {
+                    console.warn("加载国家名称映射失败:", error);
+                }
+                
+                // 加载中国各省GDP数据
+                try {
+                    provincesData = await d3.json("china-provinces-gdp.json");
+                    provincesData.sort((a, b) => a.year - b.year);
+                    
+                    // 填充省份年份选择器
+                    const provinceYears = provincesData.map(d => d.year);
+                    const provinceYearOptions = provinceYears.map(y => `<option value="${y}">${y}</option>`).join('');
+                    d3.select("#province-year-select").html(provinceYearOptions).property("value", provinceYears[provinceYears.length - 1]);
+                } catch (error) {
+                    console.warn("加载省份数据失败:", error);
+                    d3.select("#province-chart").html("<p style='color:red;'>省份数据加载失败，请检查 china-provinces-gdp.json 文件。</p>");
+                }
+                
+                if (data.length === 0) {
+                    d3.select("#chart").html("<p style='color:red;'>数据加载失败：data.json 文件为空或格式错误。请先运行 Python 脚本生成正确的数据文件。</p>");
+                    return;
+                }
+
+                data.sort((a, b) => a.year - b.year);
+                
+                const minYear = data[0].year;
+                const maxYear = data[data.length - 1].year;
+                d3.select("#year-slider").attr("min", minYear).attr("max", maxYear).property("value", minYear);
+                d3.select("#current-year-display").text(minYear);
+                
+                // 加载地图年份选择器和其他年份选择器
+                const years = data.map(d => d.year);
+                const yearOptions = years.map(y => `<option value="${y}">${y}</option>`).join('');
+                d3.select("#map-year-select").html(yearOptions).property("value", years[years.length - 1]);
+                d3.select("#china-start-year").html(yearOptions).property("value", minYear);
+                d3.select("#china-end-year").html(yearOptions).property("value", maxYear);
+                
+                updateBarChart(data[yearIndex]);
+                
+                const allCountries = Array.from(new Set(data.flatMap(d => d.data.map(c => c.country))))
+                    .filter(c => c && data.some(d => d.data.some(cd => cd.country === c && cd.gdp > 0)))
+                    .sort((a, b) => {
+                         if (a === '中国') return -1;
+                         if (b === '中国') return 1;
+                         return d3.ascending(a, b);
+                    });
+                
+                const countryOptions = allCountries.map(c => `<option value="${c}">${c}</option>`).join('');
+                d3.select("#country-select").html(countryOptions);
+
+            } catch (error) {
+                console.error("加载数据失败:", error);
+                d3.select("#chart").html("<p style='color:red;'>数据加载失败，请检查 data.json 或 events.json 文件是否存在且格式正确。</p>");
+            }
+        }
+
+        // --- 动态条形图绘制函数 (保持不变) ---
+        function updateBarChart(yearData) {
+            const currentYear = yearData.year;
+            
+            const topData = yearData.data
+                .filter(d => d.gdp > 0)
+                .sort((a, b) => b.gdp - a.gdp)
+                .slice(0, NUM_BARS);
+
+            const maxGdp = d3.max(data.flatMap(d => d.data.map(c => c.gdp)));
+            x.domain([0, maxGdp * 1.05]); 
+            y.domain(topData.map(d => d.country)); 
+
+            d3.select("#year-label").text(currentYear);
+            d3.select("#year-slider").property("value", currentYear);
+            d3.select("#current-year-display").text(currentYear);
+
+            const eventAnnotation = d3.select("#event-annotation");
+            const currentEvents = events.filter(e => e.year === currentYear);
+
+            if (currentEvents.length > 0) {
+                eventAnnotation
+                    .html(`<strong>${currentEvents[0].highlight_country}:</strong> ${currentEvents[0].event}`)
+                    .classed('annotation-visible', true);
+            } else {
+                eventAnnotation.classed('annotation-visible', false);
+            }
+
+            const bars = svg.selectAll(".bar")
+                .data(topData, d => d.country);
+
+            bars.exit().remove();
+
+            const enterBars = bars.enter().append("rect")
+                .attr("class", "bar")
+                .attr("fill", d => d.color || "#ccc")
+                .attr("height", y.bandwidth())
+                .attr("x", MARGIN.left)
+                .attr("width", 0) 
+                .attr("y", d => y(d.country));
+
+            enterBars.merge(bars)
+                .transition()
+                .duration(intervalTime * 0.9)
+                .ease(d3.easeLinear)
+                .attr("y", d => y(d.country)) 
+                .attr("width", d => x(d.gdp)); 
+
+            const labels = svg.selectAll(".label")
+                .data(topData, d => d.country);
+            
+            labels.exit().remove();
+
+            const enterLabels = labels.enter().append("text")
+                .attr("class", "label")
+                .attr("text-anchor", "start")
+                .attr("x", d => x(d.gdp) + 5)
+                .attr("y", d => y(d.country) + y.bandwidth() / 2 + 5);
+
+            enterLabels.merge(labels)
+                .transition()
+                .duration(intervalTime * 0.9)
+                .ease(d3.easeLinear)
+                .attr("y", d => y(d.country) + y.bandwidth() / 2 + 5)
+                .attr("x", d => x(d.gdp) + 5) 
+                .text(d => `${d.country} (${formatGDP(d.gdp)})`);
+
+            svg.selectAll(".axis--x").remove();
+            svg.append("g")
+                .attr("class", "axis axis--x")
+                .attr("transform", `translate(0,${HEIGHT - MARGIN.bottom})`)
+                .call(d3.axisBottom(x).tickFormat(d => `${d.toFixed(0)}T`)); 
+        }
+
+        // --- 动画控制逻辑 (保持不变) ---
+        function runAnimation() {
+            if (timer) return; 
+            const totalYears = data.length;
+            const currentSliderYear = +d3.select("#year-slider").property("value");
+            const dataStartYear = data[0].year;
+            yearIndex = currentSliderYear - dataStartYear;
+            if (yearIndex < 0) yearIndex = 0;
+
+            d3.select("#start-btn").style("display", "none");
+            d3.select("#pause-btn").style("display", "inline-block");
+            
+            timer = d3.interval(() => {
+                if (yearIndex < totalYears) {
+                    updateBarChart(data[yearIndex]);
+                    yearIndex++;
+                } else {
+                    stopAnimation();
+                    d3.select("#start-btn").style("display", "inline-block").text("▶️ 重新播放");
+                }
+            }, intervalTime);
+        }
+
+        function stopAnimation() {
+            if (timer) {
+                timer.stop();
+                timer = null;
+                d3.select("#start-btn").style("display", "inline-block").text("▶️ 继续播放");
+                d3.select("#pause-btn").style("display", "none");
+            }
+        }
+
+        function resetAnimation() {
+            stopAnimation();
+            yearIndex = 0;
+            d3.select("#year-slider").property("value", data[0].year);
+            updateBarChart(data[0]);
+            d3.select("#start-btn").text("▶️ 开始播放");
+        }
+
+        d3.select("#start-btn").on("click", runAnimation);
+        d3.select("#pause-btn").on("click", stopAnimation);
+        d3.select("#reset-btn").on("click", resetAnimation);
+
+        d3.select("#speed-select").on("change", function() {
+            intervalTime = +this.value;
+            const isRunning = timer !== null;
+            if (isRunning) {
+                stopAnimation();
+                runAnimation();
+            }
+        });
+
+        d3.select("#year-slider").on("input", function() {
+            stopAnimation();
+            const selectedYear = +this.value;
+            const dataPoint = data.find(d => d.year === selectedYear);
+            if (dataPoint) {
+                yearIndex = data.indexOf(dataPoint);
+                updateBarChart(dataPoint);
+            }
+        });
+
+        // --- 时间序列柱状图绘制函数 (drawTimeBarChart) ---
+        function drawTimeBarChart(containerId, countries, startYear, endYear) {
+            d3.select(containerId).select("svg").remove();
+
+            if (countries.length === 0) {
+                d3.select(containerId).html("<p style='text-align:center;'>请选择至少一个国家进行对比。</p>");
+                return;
+            }
+
+            const chartContainer = d3.select(containerId).node();
+            if (!chartContainer) return;
+
+            const chartWidth = chartContainer.getBoundingClientRect().width;
+            const chartHeight = 400;
+            const margin = { top: 20, right: 20, bottom: 80, left: 60 }; // 增大底部裕量以容纳旋转的年份标签
+            const innerWidth = chartWidth - margin.left - margin.right;
+            const innerHeight = chartHeight - margin.top - margin.bottom;
+
+            let lineData = [];
+            const countryColors = {}; 
+            let maxGdp = 0;
+
+            // 1. 过滤和整理数据
+            data.filter(d => d.year >= startYear && d.year <= endYear).forEach(yearData => {
+                yearData.data.forEach(countryData => {
+                    if (countries.includes(countryData.country)) {
+                        lineData.push({
+                            year: yearData.year,
+                            country: countryData.country,
+                            gdp: countryData.gdp
+                        });
+                        if (countryData.gdp > maxGdp) maxGdp = countryData.gdp;
+                        if (!countryColors[countryData.country]) {
+                            countryColors[countryData.country] = countryData.color || '#999';
+                        }
+                    }
+                });
+            });
+
+            if (lineData.length === 0) {
+                d3.select(containerId).html("<p style='text-align:center;'>所选国家在指定年份范围内没有数据。</p>");
+                return;
+            }
+
+            const allYears = Array.from(new Set(lineData.map(d => d.year))).sort(d3.ascending);
+            
+            // 2. 定义尺度
+            // X0: 年份尺度 (主尺度)
+            const x0 = d3.scaleBand()
+                .domain(allYears)
+                .range([margin.left, chartWidth - margin.right])
+                .paddingInner(0.1);
+
+            // X1: 国家尺度 (嵌套尺度，用于分组)
+            const x1 = d3.scaleBand()
+                .domain(countries)
+                .range([0, x0.bandwidth()])
+                .padding(0.05);
+
+            // Y: GDP 尺度
+            const y = d3.scaleLinear()
+                .domain([0, maxGdp * 1.05])
+                .range([chartHeight - margin.bottom, margin.top]);
+
+            // 3. 创建 SVG 容器和主绘图区域
+            const svgGroup = d3.select(containerId).append("svg")
+                .attr("width", chartWidth)
+                .attr("height", chartHeight)
+                .append("g")
+                .attr("transform", `translate(0, 0)`);
+
+            // 4. 绘制柱子
+            const groupedData = d3.group(lineData, d => d.year);
+
+            svgGroup.selectAll(".yearGroup")
+                .data(groupedData)
+                .join("g")
+                .attr("class", "yearGroup")
+                .attr("transform", d => `translate(${x0(d[0])}, 0)`)
+                .selectAll(".bar")
+                .data(d => d[1])
+                .join("rect")
+                .attr("class", "bar")
+                .attr("x", d => x1(d.country))
+                .attr("y", d => y(d.gdp))
+                .attr("width", x1.bandwidth())
+                .attr("height", d => innerHeight - y(d.gdp) + margin.top) // 柱子高度
+                .attr("fill", d => countryColors[d.country] || '#ccc')
+                .style("opacity", 0) // 动画准备
+                .transition()
+                .duration(500)
+                .ease(d3.easeQuadOut)
+                .style("opacity", 1);
+
+
+            // 5. 绘制坐标轴
+            // X 轴
+            svgGroup.append("g")
+                .attr("transform", `translate(0, ${chartHeight - margin.bottom})`)
+                .call(d3.axisBottom(x0)
+                    .tickValues(x0.domain().filter((d, i) => i % (Math.ceil(allYears.length / 10)) === 0)) // 稀疏刻度
+                )
+                .selectAll("text")
+                .attr("transform", "rotate(-45)")
+                .style("text-anchor", "end")
+                .attr("dx", "-.8em")
+                .attr("dy", ".15em");
+
+            // Y 轴
+            svgGroup.append("g")
+                .attr("transform", `translate(${margin.left}, 0)`)
+                .call(d3.axisLeft(y).tickFormat(d => `${d.toFixed(0)}T`));
+
+            // 6. 绘制图例 (Legend)
+            const legend = svgGroup.append("g")
+                .attr("font-family", "sans-serif")
+                .attr("font-size", 10)
+                .attr("text-anchor", "start")
+                .selectAll("g")
+                .data(countries)
+                .join("g")
+                .attr("transform", (d, i) => `translate(${chartWidth - margin.right + 10}, ${i * 20})`);
+
+            legend.append("rect")
+                .attr("x", 0)
+                .attr("width", 19)
+                .attr("height", 19)
+                .attr("fill", d => countryColors[d] || '#ccc');
+
+            legend.append("text")
+                .attr("x", 24)
+                .attr("y", 9.5)
+                .attr("dy", "0.32em")
+                .text(d => d);
+        }
+        
+        // --- 事件监听器：全球对比柱状图 (多选已修复) ---
+        d3.select("#draw-line-chart").on("click", () => {
+            const selectedOptions = d3.select("#country-select").property("options");
+            const countries = Array.from(selectedOptions)
+                .filter(option => option.selected)
+                .map(option => option.value);
+            
+            const startYear = data.length > 0 ? data[0].year : 1990;
+            const endYear = data.length > 0 ? data[data.length - 1].year : 2023;
+            drawTimeBarChart("#line-chart", countries, startYear, endYear);
+        });
+
+        // --- 事件监听器：中国分析柱状图 ---
+        d3.select("#draw-china-chart").on("click", () => {
+            const startYear = +d3.select("#china-start-year").property("value");
+            const endYear = +d3.select("#china-end-year").property("value");
+            
+            if (startYear > endYear) {
+                alert("起始年份不能大于结束年份！");
+                return;
+            }
+            
+            drawTimeBarChart("#china-line-chart", ["中国"], startYear, endYear);
+        });
+
+        // --- 中国各省GDP可视化函数 ---
+        function drawProvinceChart() {
+            if (provincesData.length === 0) {
+                d3.select("#province-chart").html("<p style='color:red;'>省份数据未加载，请检查数据文件。</p>");
+                return;
+            }
+
+            const selectedYear = +d3.select("#province-year-select").property("value");
+            const yearData = provincesData.find(d => d.year === selectedYear);
+            
+            if (!yearData) {
+                d3.select("#province-chart").html("<p style='color:red;'>未找到该年份的数据。</p>");
+                return;
+            }
+
+            // 移除旧图表
+            d3.select("#province-chart").select("svg").remove();
+
+            if (provinceViewMode === 'bar') {
+                drawProvinceBarChart(yearData);
+            } else {
+                drawProvincePieChart(yearData);
+            }
+        }
+
+        // 绘制省份条形图
+        function drawProvinceBarChart(yearData) {
+            const container = d3.select("#province-chart");
+            const containerWidth = container.node().getBoundingClientRect().width || 800;
+            const chartHeight = 600;
+            const margin = { top: 40, right: 150, bottom: 60, left: 120 };
+
+            // 排序数据（按GDP降序）
+            const sortedProvinces = [...yearData.provinces]
+                .filter(p => p.gdp > 0)
+                .sort((a, b) => b.gdp - a.gdp);
+
+            const x = d3.scaleLinear()
+                .domain([0, d3.max(sortedProvinces, d => d.gdp) * 1.1])
+                .range([margin.left, containerWidth - margin.right]);
+
+            const y = d3.scaleBand()
+                .domain(sortedProvinces.map(d => d.name))
+                .range([margin.top, chartHeight - margin.bottom])
+                .padding(0.15);
+
+            const svg = container.append("svg")
+                .attr("width", containerWidth)
+                .attr("height", chartHeight);
+
+            // 绘制条形
+            const bars = svg.selectAll(".province-bar")
+                .data(sortedProvinces)
+                .join("rect")
+                .attr("class", "province-bar")
+                .attr("x", margin.left)
+                .attr("y", d => y(d.name))
+                .attr("width", 0)
+                .attr("height", y.bandwidth())
+                .attr("fill", d => d.color)
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1)
+                .transition()
+                .duration(1000)
+                .ease(d3.easeCubicOut)
+                .attr("width", d => x(d.gdp) - margin.left);
+
+            // 添加GDP标签
+            svg.selectAll(".province-label")
+                .data(sortedProvinces)
+                .join("text")
+                .attr("class", "province-label")
+                .attr("x", d => x(d.gdp) + 5)
+                .attr("y", d => y(d.name) + y.bandwidth() / 2)
+                .attr("dy", "0.35em")
+                .style("font-size", "12px")
+                .style("fill", "#333")
+                .text(d => `${d.gdp.toFixed(3)} 万亿美元`)
+                .style("opacity", 0)
+                .transition()
+                .duration(1000)
+                .delay(500)
+                .style("opacity", 1);
+
+            // 添加省份名称标签
+            svg.selectAll(".province-name")
+                .data(sortedProvinces)
+                .join("text")
+                .attr("class", "province-name")
+                .attr("x", margin.left - 10)
+                .attr("y", d => y(d.name) + y.bandwidth() / 2)
+                .attr("dy", "0.35em")
+                .attr("text-anchor", "end")
+                .style("font-size", "12px")
+                .style("fill", "#333")
+                .text(d => d.name);
+
+            // 添加X轴
+            svg.append("g")
+                .attr("transform", `translate(0, ${chartHeight - margin.bottom})`)
+                .call(d3.axisBottom(x).tickFormat(d => `${d.toFixed(2)}T`))
+                .style("font-size", "11px");
+
+            // 添加标题
+            svg.append("text")
+                .attr("x", containerWidth / 2)
+                .attr("y", 25)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .style("font-weight", "bold")
+                .text(`${yearData.year} 年中国各省 GDP 排名（万亿美元）`);
+
+            // 添加总计
+            const totalGDP = d3.sum(sortedProvinces, d => d.gdp);
+            svg.append("text")
+                .attr("x", containerWidth / 2)
+                .attr("y", chartHeight - 10)
+                .attr("text-anchor", "middle")
+                .style("font-size", "12px")
+                .style("font-weight", "bold")
+                .text(`全国 GDP 总计: ${totalGDP.toFixed(3)} 万亿美元`);
+        }
+
+        // 绘制省份饼图
+        function drawProvincePieChart(yearData) {
+            const container = d3.select("#province-chart");
+            const containerWidth = container.node().getBoundingClientRect().width || 800;
+            const chartHeight = 600;
+            const radius = Math.min(containerWidth, chartHeight) / 2 - 80;
+            const margin = { top: 40, right: 40, bottom: 40, left: 40 };
+
+            // 过滤并排序数据（只显示前10名，其他合并）
+            const sortedProvinces = [...yearData.provinces]
+                .filter(p => p.gdp > 0)
+                .sort((a, b) => b.gdp - a.gdp);
+
+            const top10 = sortedProvinces.slice(0, 10);
+            const others = sortedProvinces.slice(10);
+            const othersGDP = d3.sum(others, d => d.gdp);
+            
+            if (othersGDP > 0) {
+                top10.push({
+                    name: "其他省份",
+                    gdp: othersGDP,
+                    color: "#D3D3D3"
+                });
+            }
+
+            const pie = d3.pie()
+                .value(d => d.gdp)
+                .sort(null);
+
+            const arc = d3.arc()
+                .innerRadius(0)
+                .outerRadius(radius);
+
+            const arcLabel = d3.arc()
+                .innerRadius(radius + 20)
+                .outerRadius(radius + 40);
+
+            const svg = container.append("svg")
+                .attr("width", containerWidth)
+                .attr("height", chartHeight);
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${containerWidth / 2}, ${chartHeight / 2})`);
+
+            const arcs = g.selectAll(".arc")
+                .data(pie(top10))
+                .join("g")
+                .attr("class", "arc");
+
+            // 绘制扇形
+            arcs.append("path")
+                .attr("fill", d => d.data.color)
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 2)
+                .attr("d", arc)
+                .style("opacity", 0)
+                .transition()
+                .duration(800)
+                .style("opacity", 1)
+                .attrTween("d", function(d) {
+                    const interpolate = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
+                    return function(t) {
+                        return arc(interpolate(t));
+                    };
+                });
+
+            // 添加标签
+            arcs.append("text")
+                .attr("transform", d => `translate(${arcLabel.centroid(d)})`)
+                .attr("dy", "0.35em")
+                .style("font-size", "11px")
+                .style("text-anchor", "middle")
+                .style("font-weight", "bold")
+                .text(d => {
+                    const percentage = ((d.endAngle - d.startAngle) / (2 * Math.PI) * 100).toFixed(1);
+                    return percentage > 3 ? `${d.data.name}\n${percentage}%` : '';
+                });
+
+            // 添加图例
+            const legend = svg.append("g")
+                .attr("transform", `translate(${containerWidth - 200}, 60)`);
+
+            const legendItems = legend.selectAll(".legend-item")
+                .data(top10)
+                .join("g")
+                .attr("class", "legend-item")
+                .attr("transform", (d, i) => `translate(0, ${i * 20})`);
+
+            legendItems.append("rect")
+                .attr("width", 15)
+                .attr("height", 15)
+                .attr("fill", d => d.color);
+
+            legendItems.append("text")
+                .attr("x", 20)
+                .attr("y", 12)
+                .style("font-size", "11px")
+                .text(d => `${d.name} (${d.gdp.toFixed(3)}T)`);
+
+            // 添加标题
+            svg.append("text")
+                .attr("x", containerWidth / 2)
+                .attr("y", 25)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .style("font-weight", "bold")
+                .text(`${yearData.year} 年中国各省 GDP 占比分布`);
+
+            // 添加总计
+            const totalGDP = d3.sum(top10, d => d.gdp);
+            svg.append("text")
+                .attr("x", containerWidth / 2)
+                .attr("y", chartHeight - 10)
+                .attr("text-anchor", "middle")
+                .style("font-size", "12px")
+                .style("font-weight", "bold")
+                .text(`全国 GDP 总计: ${totalGDP.toFixed(3)} 万亿美元`);
+        }
+
+        // --- 事件监听器：省份GDP图表 ---
+        d3.select("#draw-province-chart").on("click", drawProvinceChart);
+        
+        d3.select("#toggle-province-view").on("click", function() {
+            provinceViewMode = provinceViewMode === 'bar' ? 'pie' : 'bar';
+            this.textContent = provinceViewMode === 'bar' ? '切换为饼图' : '切换为条形图';
+            drawProvinceChart();
+        });
+
+        // 初始设置切换按钮文本
+        d3.select("#toggle-province-view").text("切换为饼图");
+
+        // --- 世界地图GDP可视化功能 ---
+        async function loadWorldMap() {
+            try {
+                // 使用在线世界地图数据 (TopoJSON格式，来自unpkg CDN)
+                // 这是一个简化的世界地图，适合GDP可视化
+                const url = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+                worldMapData = await d3.json(url);
+                return true;
+            } catch (error) {
+                console.error("加载世界地图数据失败:", error);
+                d3.select("#world-map-chart").html(`
+                    <div style="text-align:center; padding:40px; color:#666;">
+                        <p>⚠️ 无法加载在线地图数据</p>
+                        <p style="font-size:12px;">请检查网络连接，或使用本地地图数据文件</p>
+                        <p style="font-size:12px;">提示：可以从 <a href="https://github.com/topojson/world-atlas" target="_blank">world-atlas</a> 下载地图数据</p>
+                    </div>
+                `);
+                return false;
+            }
+        }
+
+        function drawWorldMap() {
+            if (!worldMapData) {
+                loadWorldMap().then(loaded => {
+                    if (loaded) drawWorldMap();
+                });
+                return;
+            }
+
+            if (data.length === 0) {
+                d3.select("#world-map-chart").html("<p style='color:red;'>GDP数据未加载，请先加载数据文件。</p>");
+                return;
+            }
+
+            const selectedYear = +d3.select("#map-year-select").property("value");
+            const yearData = data.find(d => d.year === selectedYear);
+            
+            if (!yearData) {
+                d3.select("#world-map-chart").html("<p style='color:red;'>未找到该年份的数据。</p>");
+                return;
+            }
+
+            // 清除旧地图
+            d3.select("#world-map-chart").selectAll("*").remove();
+            d3.select("#map-legend").selectAll("*").remove();
+
+            const container = d3.select("#world-map-chart");
+            const containerWidth = container.node().getBoundingClientRect().width || 1000;
+            const mapHeight = 600;
+            const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+
+            // 创建GDP数据映射（中文名 -> GDP值）
+            const gdpMap = {};
+            yearData.data.forEach(d => {
+                if (d.gdp > 0) {
+                    gdpMap[d.country] = d.gdp;
+                }
+            });
+
+            // 创建颜色分级
+            const maxGDP = d3.max(Object.values(gdpMap));
+            const colorScale = d3.scaleThreshold()
+                .domain([0.1, 0.5, 1, 2, 5, 10, 20])
+                .range([
+                    "#e8f4f8",  // 极低 (0-0.1T)
+                    "#b3d9e6",  // 很低 (0.1-0.5T)
+                    "#66b3d9",  // 低 (0.5-1T)
+                    "#3399cc",  // 中低 (1-2T)
+                    "#0066cc",  // 中 (2-5T)
+                    "#004080",  // 高 (5-10T)
+                    "#00264d"   // 极高 (>10T)
+                ]);
+
+            // 创建反向映射（英文名 -> 中文名）和名称变体映射
+            const reverseMapping = {};
+            const nameVariants = {};
+            
+            Object.entries(countryNameMapping).forEach(([chineseName, englishName]) => {
+                reverseMapping[englishName] = chineseName;
+                reverseMapping[englishName.toLowerCase()] = chineseName;
+                // 创建一些常见变体
+                nameVariants[englishName.replace(/\s+/g, "")] = chineseName;
+                nameVariants[englishName.replace(/\s+/g, "").toLowerCase()] = chineseName;
+            });
+
+            // 常见国家名称映射（处理地图数据中的不同名称格式）
+            const commonNameMappings = {
+                "United States": "United States of America",
+                "USA": "United States of America",
+                "US": "United States of America",
+                "Russia": "Russia",
+                "Russian Federation": "Russia",
+                "South Korea": "South Korea",
+                "Korea, South": "South Korea",
+                "Republic of Korea": "South Korea",
+                "North Korea": "North Korea",
+                "Korea, North": "North Korea",
+                "UK": "United Kingdom",
+                "U.K.": "United Kingdom",
+                "Czech Republic": "Czech Republic",
+                "Czechia": "Czech Republic"
+            };
+
+            function getGDPColor(countryName) {
+                if (!countryName) return "#e0e0e0";
+                
+                // 尝试直接匹配中文名
+                if (gdpMap[countryName]) {
+                    return colorScale(gdpMap[countryName]);
+                }
+                
+                // 标准化国家名称
+                let normalizedName = countryName;
+                if (commonNameMappings[countryName]) {
+                    normalizedName = commonNameMappings[countryName];
+                }
+                
+                // 尝试通过英文名映射
+                if (reverseMapping[normalizedName] || reverseMapping[normalizedName.toLowerCase()]) {
+                    const chineseName = reverseMapping[normalizedName] || reverseMapping[normalizedName.toLowerCase()];
+                    if (gdpMap[chineseName]) {
+                        return colorScale(gdpMap[chineseName]);
+                    }
+                }
+                
+                // 尝试名称变体匹配
+                const noSpaceName = normalizedName.replace(/\s+/g, "");
+                if (nameVariants[noSpaceName] || nameVariants[noSpaceName.toLowerCase()]) {
+                    const chineseName = nameVariants[noSpaceName] || nameVariants[noSpaceName.toLowerCase()];
+                    if (gdpMap[chineseName]) {
+                        return colorScale(gdpMap[chineseName]);
+                    }
+                }
+                
+                // 无数据时返回灰色
+                return "#e0e0e0";
+            }
+
+            function getGDPValue(countryName) {
+                if (!countryName) return null;
+                
+                if (gdpMap[countryName]) {
+                    return gdpMap[countryName];
+                }
+                
+                // 标准化国家名称
+                let normalizedName = countryName;
+                if (commonNameMappings[countryName]) {
+                    normalizedName = commonNameMappings[countryName];
+                }
+                
+                // 尝试通过英文名映射
+                if (reverseMapping[normalizedName] || reverseMapping[normalizedName.toLowerCase()]) {
+                    const chineseName = reverseMapping[normalizedName] || reverseMapping[normalizedName.toLowerCase()];
+                    if (gdpMap[chineseName]) {
+                        return gdpMap[chineseName];
+                    }
+                }
+                
+                // 尝试名称变体匹配
+                const noSpaceName = normalizedName.replace(/\s+/g, "");
+                if (nameVariants[noSpaceName] || nameVariants[noSpaceName.toLowerCase()]) {
+                    const chineseName = nameVariants[noSpaceName] || nameVariants[noSpaceName.toLowerCase()];
+                    if (gdpMap[chineseName]) {
+                        return gdpMap[chineseName];
+                    }
+                }
+                
+                return null;
+            }
+            
+            function getChineseName(countryName) {
+                if (gdpMap[countryName]) return countryName;
+                let normalizedName = countryName;
+                if (commonNameMappings[countryName]) {
+                    normalizedName = commonNameMappings[countryName];
+                }
+                return reverseMapping[normalizedName] || reverseMapping[normalizedName.toLowerCase()] || countryName;
+            }
+
+            // 创建投影
+            const projection = d3.geoNaturalEarth1()
+                .scale((containerWidth - margin.left - margin.right) / 6.5)
+                .translate([(containerWidth - margin.left - margin.right) / 2, (mapHeight - margin.top - margin.bottom) / 2]);
+
+            const path = d3.geoPath().projection(projection);
+
+            // 创建SVG
+            const svg = container.append("svg")
+                .attr("width", containerWidth)
+                .attr("height", mapHeight);
+
+            const mapGroup = svg.append("g")
+                .attr("class", "map-group");
+
+            // 转换TopoJSON为GeoJSON
+            // 尝试不同的对象名称
+            let countriesObject = null;
+            if (worldMapData.objects.countries) {
+                countriesObject = worldMapData.objects.countries;
+            } else if (worldMapData.objects.countries_110m) {
+                countriesObject = worldMapData.objects.countries_110m;
+            } else {
+                // 获取第一个对象
+                const objectKeys = Object.keys(worldMapData.objects);
+                if (objectKeys.length > 0) {
+                    countriesObject = worldMapData.objects[objectKeys[0]];
+                }
+            }
+            
+            if (!countriesObject) {
+                d3.select("#world-map-chart").html("<p style='color:red;'>地图数据格式不正确。</p>");
+                return;
+            }
+            
+            const countries = topojson.feature(worldMapData, countriesObject);
+
+            // 绘制国家
+            mapGroup.selectAll(".country")
+                .data(countries.features)
+                .enter()
+                .append("path")
+                .attr("class", "country")
+                .attr("d", path)
+                .attr("fill", d => {
+                    const countryName = d.properties.NAME || d.properties.name || "";
+                    return getGDPColor(countryName);
+                })
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 0.5)
+                .style("cursor", "pointer")
+                .on("mouseover", function(event, d) {
+                    const countryName = d.properties.NAME || d.properties.name || d.properties.NAME_LONG || "";
+                    const chineseName = getChineseName(countryName);
+                    const gdpValue = getGDPValue(countryName);
+                    
+                    d3.select(this)
+                        .attr("stroke", "#333")
+                        .attr("stroke-width", 2);
+
+                    const tooltip = d3.select("#map-tooltip");
+                    const displayName = chineseName !== countryName ? `${chineseName} (${countryName})` : countryName;
+                    tooltip
+                        .style("opacity", 1)
+                        .html(`
+                            <strong>${displayName}</strong><br/>
+                            ${gdpValue !== null ? `GDP: ${gdpValue.toFixed(2)} 万亿美元` : 'GDP数据: 暂无'}
+                        `)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 10) + "px");
+                })
+                .on("mouseout", function() {
+                    d3.select(this)
+                        .attr("stroke", "#fff")
+                        .attr("stroke-width", 0.5);
+
+                    d3.select("#map-tooltip")
+                        .style("opacity", 0);
+                })
+                .transition()
+                .duration(500)
+                .style("opacity", 1);
+
+            // 添加标题
+            svg.append("text")
+                .attr("x", containerWidth / 2)
+                .attr("y", 30)
+                .attr("text-anchor", "middle")
+                .style("font-size", "18px")
+                .style("font-weight", "bold")
+                .text(`${selectedYear} 年世界各国 GDP 分布图 (万亿美元)`);
+
+            // 添加图例
+            const legendWidth = 300;
+            const legendHeight = 200;
+            const legend = d3.select("#map-legend")
+                .append("svg")
+                .attr("width", legendWidth)
+                .attr("height", legendHeight);
+
+            const legendX = 20;
+            const legendY = 20;
+            const legendItemHeight = 25;
+
+            const legendData = [
+                { label: "> 20", color: "#00264d" },
+                { label: "10 - 20", color: "#004080" },
+                { label: "5 - 10", color: "#0066cc" },
+                { label: "2 - 5", color: "#3399cc" },
+                { label: "1 - 2", color: "#66b3d9" },
+                { label: "0.5 - 1", color: "#b3d9e6" },
+                { label: "0.1 - 0.5", color: "#e8f4f8" },
+                { label: "< 0.1 / 无数据", color: "#e0e0e0" }
+            ];
+
+            legend.selectAll(".legend-item")
+                .data(legendData)
+                .enter()
+                .append("g")
+                .attr("class", "legend-item")
+                .attr("transform", (d, i) => `translate(${legendX}, ${legendY + i * legendItemHeight})`);
+
+            legend.selectAll(".legend-item")
+                .append("rect")
+                .attr("width", 20)
+                .attr("height", 18)
+                .attr("fill", d => d.color)
+                .attr("stroke", "#333")
+                .attr("stroke-width", 0.5);
+
+            legend.selectAll(".legend-item")
+                .append("text")
+                .attr("x", 30)
+                .attr("y", 14)
+                .style("font-size", "12px")
+                .text(d => d.label + " 万亿美元");
+
+            // 添加缩放功能
+            const zoom = d3.zoom()
+                .scaleExtent([0.5, 8])
+                .on("zoom", function(event) {
+                    mapGroup.attr("transform", event.transform);
+                });
+
+            svg.call(zoom);
+
+            mapZoom = zoom;
+        }
+
+        // --- 事件监听器：世界地图 ---
+        d3.select("#draw-map").on("click", () => {
+            if (!worldMapData) {
+                loadWorldMap().then(loaded => {
+                    if (loaded) drawWorldMap();
+                });
+            } else {
+                drawWorldMap();
+            }
+        });
+
+        d3.select("#reset-map-zoom").on("click", () => {
+            if (mapZoom) {
+                d3.select("#world-map-chart svg")
+                    .transition()
+                    .duration(750)
+                    .call(mapZoom.transform, d3.zoomIdentity);
+            }
+        });
+
+        // 页面加载完成后执行
+        loadData();
+
+    </script>
+
+</body>
+</html>

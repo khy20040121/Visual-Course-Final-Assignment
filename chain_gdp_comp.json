@@ -1,0 +1,42 @@
+[
+  {
+    "year": 1990,
+    "components": [
+      { "name": "消费", "value": 68.20 },
+      { "name": "投资", "value": 34.60 },
+      { "name": "净出口", "value": -2.80 }
+    ]
+  },
+  {
+    "year": 2000,
+    "components": [
+      { "name": "消费", "value": 61.20 },
+      { "name": "投资", "value": 36.30 },
+      { "name": "净出口", "value": 2.50 }
+    ]
+  },
+  {
+    "year": 2010,
+    "components": [
+      { "name": "消费", "value": 49.30 },
+      { "name": "投资", "value": 48.00 },
+      { "name": "净出口", "value": 2.70 }
+    ]
+  },
+  {
+    "year": 2020,
+    "components": [
+      { "name": "消费", "value": 54.30 },
+      { "name": "投资", "value": 43.10 },
+      { "name": "净出口", "value": 2.60 }
+    ]
+  },
+  {
+    "year": 2023,
+    "components": [
+      { "name": "消费", "value": 53.60 },
+      { "name": "投资", "value": 42.80 },
+      { "name": "净出口", "value": 3.60 }
+    ]
+  }
+]

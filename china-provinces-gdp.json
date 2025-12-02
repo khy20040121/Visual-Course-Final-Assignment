@@ -1,0 +1,171 @@
+[
+  {
+    "year": 1990,
+    "provinces": [
+      { "name": "广东", "gdp": 0.0159, "color": "#DC143C" },
+      { "name": "江苏", "gdp": 0.01416, "color": "#FF6347" },
+      { "name": "山东", "gdp": 0.01511, "color": "#FF7F50" },
+      { "name": "辽宁", "gdp": 0.01062, "color": "#FFA500" },
+      { "name": "四川", "gdp": 0.00891, "color": "#FFD700" },
+      { "name": "河南", "gdp": 0.00895, "color": "#ADFF2F" },
+      { "name": "湖北", "gdp": 0.00824, "color": "#32CD32" },
+      { "name": "上海", "gdp": 0.00756, "color": "#00CED1" },
+      { "name": "浙江", "gdp": 0.00904, "color": "#4682B4" },
+      { "name": "河北", "gdp": 0.00896, "color": "#4169E1" },
+      { "name": "湖南", "gdp": 0.00744, "color": "#8A2BE2" },
+      { "name": "黑龙江", "gdp": 0.00715, "color": "#DA70D6" },
+      { "name": "福建", "gdp": 0.00522, "color": "#FF1493" },
+      { "name": "安徽", "gdp": 0.00658, "color": "#FF69B4" },
+      { "name": "北京", "gdp": 0.00507, "color": "#C71585" },
+      { "name": "其他省份", "gdp": 0.04396, "color": "#D3D3D3" }
+    ]
+  },
+  {
+    "year": 1995,
+    "provinces": [
+      { "name": "广东", "gdp": 0.05938, "color": "#DC143C" },
+      { "name": "江苏", "gdp": 0.05155, "color": "#FF6347" },
+      { "name": "山东", "gdp": 0.05002, "color": "#FF7F50" },
+      { "name": "浙江", "gdp": 0.03524, "color": "#4682B4" },
+      { "name": "河南", "gdp": 0.03002, "color": "#ADFF2F" },
+      { "name": "河北", "gdp": 0.02849, "color": "#4169E1" },
+      { "name": "上海", "gdp": 0.02462, "color": "#00CED1" },
+      { "name": "辽宁", "gdp": 0.02793, "color": "#FFA500" },
+      { "name": "四川", "gdp": 0.03504, "color": "#FFD700" },
+      { "name": "湖北", "gdp": 0.02391, "color": "#32CD32" },
+      { "name": "福建", "gdp": 0.02160, "color": "#FF1493" },
+      { "name": "湖南", "gdp": 0.02195, "color": "#8A2BE2" },
+      { "name": "安徽", "gdp": 0.02003, "color": "#FF69B4" },
+      { "name": "北京", "gdp": 0.01507, "color": "#C71585" },
+      { "name": "黑龙江", "gdp": 0.02014, "color": "#DA70D6" },
+      { "name": "其他省份", "gdp": 0.14605, "color": "#D3D3D3" }
+    ]
+  },
+  {
+    "year": 2000,
+    "provinces": [
+      { "name": "广东", "gdp": 0.10741, "color": "#DC143C" },
+      { "name": "江苏", "gdp": 0.08583, "color": "#FF6347" },
+      { "name": "山东", "gdp": 0.08338, "color": "#FF7F50" },
+      { "name": "浙江", "gdp": 0.06164, "color": "#4682B4" },
+      { "name": "河南", "gdp": 0.05135, "color": "#ADFF2F" },
+      { "name": "河北", "gdp": 0.05089, "color": "#4169E1" },
+      { "name": "上海", "gdp": 0.04771, "color": "#00CED1" },
+      { "name": "辽宁", "gdp": 0.04669, "color": "#FFA500" },
+      { "name": "四川", "gdp": 0.04018, "color": "#FFD700" },
+      { "name": "湖北", "gdp": 0.04276, "color": "#32CD32" },
+      { "name": "福建", "gdp": 0.03924, "color": "#FF1493" },
+      { "name": "湖南", "gdp": 0.03691, "color": "#8A2BE2" },
+      { "name": "北京", "gdp": 0.02908, "color": "#C71585" },
+      { "name": "安徽", "gdp": 0.03038, "color": "#FF69B4" },
+      { "name": "黑龙江", "gdp": 0.03253, "color": "#DA70D6" },
+      { "name": "其他省份", "gdp": 0.25392, "color": "#D3D3D3" }
+    ]
+  },
+  {
+    "year": 2005,
+    "provinces": [
+      { "name": "广东", "gdp": 0.22557, "color": "#DC143C" },
+      { "name": "江苏", "gdp": 0.18305, "color": "#FF6347" },
+      { "name": "山东", "gdp": 0.18516, "color": "#FF7F50" },
+      { "name": "浙江", "gdp": 0.13437, "color": "#4682B4" },
+      { "name": "河南", "gdp": 0.10587, "color": "#ADFF2F" },
+      { "name": "河北", "gdp": 0.10012, "color": "#4169E1" },
+      { "name": "上海", "gdp": 0.09251, "color": "#00CED1" },
+      { "name": "辽宁", "gdp": 0.08009, "color": "#FFA500" },
+      { "name": "四川", "gdp": 0.07385, "color": "#FFD700" },
+      { "name": "湖北", "gdp": 0.06594, "color": "#32CD32" },
+      { "name": "福建", "gdp": 0.06560, "color": "#FF1493" },
+      { "name": "湖南", "gdp": 0.06511, "color": "#8A2BE2" },
+      { "name": "北京", "gdp": 0.06945, "color": "#C71585" },
+      { "name": "安徽", "gdp": 0.05375, "color": "#FF69B4" },
+      { "name": "黑龙江", "gdp": 0.05511, "color": "#DA70D6" },
+      { "name": "其他省份", "gdp": 0.48345, "color": "#D3D3D3" }
+    ]
+  },
+  {
+    "year": 2010,
+    "provinces": [
+      { "name": "广东", "gdp": 0.46013, "color": "#DC143C" },
+      { "name": "江苏", "gdp": 0.41425, "color": "#FF6347" },
+      { "name": "山东", "gdp": 0.39169, "color": "#FF7F50" },
+      { "name": "浙江", "gdp": 0.27722, "color": "#4682B4" },
+      { "name": "河南", "gdp": 0.23092, "color": "#ADFF2F" },
+      { "name": "河北", "gdp": 0.20394, "color": "#4169E1" },
+      { "name": "辽宁", "gdp": 0.18457, "color": "#FFA500" },
+      { "name": "四川", "gdp": 0.17185, "color": "#FFD700" },
+      { "name": "上海", "gdp": 0.17166, "color": "#00CED1" },
+      { "name": "湖南", "gdp": 0.16037, "color": "#8A2BE2" },
+      { "name": "湖北", "gdp": 0.15967, "color": "#32CD32" },
+      { "name": "福建", "gdp": 0.14737, "color": "#FF1493" },
+      { "name": "北京", "gdp": 0.14113, "color": "#C71585" },
+      { "name": "安徽", "gdp": 0.12359, "color": "#FF69B4" },
+      { "name": "内蒙古", "gdp": 0.11672, "color": "#20B2AA" },
+      { "name": "其他省份", "gdp": 1.07191, "color": "#D3D3D3" }
+    ]
+  },
+  {
+    "year": 2015,
+    "provinces": [
+      { "name": "广东", "gdp": 0.72813, "color": "#DC143C" },
+      { "name": "江苏", "gdp": 0.70116, "color": "#FF6347" },
+      { "name": "山东", "gdp": 0.63002, "color": "#FF7F50" },
+      { "name": "浙江", "gdp": 0.42886, "color": "#4682B4" },
+      { "name": "河南", "gdp": 0.37002, "color": "#ADFF2F" },
+      { "name": "四川", "gdp": 0.30103, "color": "#FFD700" },
+      { "name": "湖北", "gdp": 0.29550, "color": "#32CD32" },
+      { "name": "河北", "gdp": 0.29806, "color": "#4169E1" },
+      { "name": "湖南", "gdp": 0.28902, "color": "#8A2BE2" },
+      { "name": "福建", "gdp": 0.25979, "color": "#FF1493" },
+      { "name": "上海", "gdp": 0.25123, "color": "#00CED1" },
+      { "name": "北京", "gdp": 0.23015, "color": "#C71585" },
+      { "name": "安徽", "gdp": 0.22005, "color": "#FF69B4" },
+      { "name": "辽宁", "gdp": 0.28669, "color": "#FFA500" },
+      { "name": "陕西", "gdp": 0.18171, "color": "#9370DB" },
+      { "name": "其他省份", "gdp": 1.54556, "color": "#D3D3D3" }
+    ]
+  },
+  {
+    "year": 2020,
+    "provinces": [
+      { "name": "广东", "gdp": 1.10151, "color": "#DC143C" },
+      { "name": "江苏", "gdp": 1.02759, "color": "#FF6347" },
+      { "name": "山东", "gdp": 0.73129, "color": "#FF7F50" },
+      { "name": "浙江", "gdp": 0.64613, "color": "#4682B4" },
+      { "name": "河南", "gdp": 0.54997, "color": "#ADFF2F" },
+      { "name": "四川", "gdp": 0.48598, "color": "#FFD700" },
+      { "name": "福建", "gdp": 0.43903, "color": "#FF1493" },
+      { "name": "湖北", "gdp": 0.43443, "color": "#32CD32" },
+      { "name": "湖南", "gdp": 0.41781, "color": "#8A2BE2" },
+      { "name": "上海", "gdp": 0.38701, "color": "#00CED1" },
+      { "name": "安徽", "gdp": 0.38680, "color": "#FF69B4" },
+      { "name": "北京", "gdp": 0.36102, "color": "#C71585" },
+      { "name": "河北", "gdp": 0.36206, "color": "#4169E1" },
+      { "name": "陕西", "gdp": 0.26181, "color": "#9370DB" },
+      { "name": "江西", "gdp": 0.25792, "color": "#FF4500" },
+      { "name": "其他省份", "gdp": 2.57063, "color": "#D3D3D3" }
+    ]
+  },
+  {
+    "year": 2023,
+    "provinces": [
+      { "name": "广东", "gdp": 1.35169, "color": "#DC143C" },
+      { "name": "江苏", "gdp": 1.28018, "color": "#FF6347" },
+      { "name": "山东", "gdp": 0.92041, "color": "#FF7F50" },
+      { "name": "浙江", "gdp": 0.82553, "color": "#4682B4" },
+      { "name": "河南", "gdp": 0.59132, "color": "#ADFF2F" },
+      { "name": "四川", "gdp": 0.60132, "color": "#FFD700" },
+      { "name": "湖北", "gdp": 0.55803, "color": "#32CD32" },
+      { "name": "福建", "gdp": 0.54355, "color": "#FF1493" },
+      { "name": "湖南", "gdp": 0.50012, "color": "#8A2BE2" },
+      { "name": "上海", "gdp": 0.47218, "color": "#00CED1" },
+      { "name": "安徽", "gdp": 0.47058, "color": "#FF69B4" },
+      { "name": "北京", "gdp": 0.43760, "color": "#C71585" },
+      { "name": "河北", "gdp": 0.43904, "color": "#4169E1" },
+      { "name": "陕西", "gdp": 0.33786, "color": "#9370DB" },
+      { "name": "江西", "gdp": 0.32007, "color": "#FF4500" },
+      { "name": "其他省份", "gdp": 3.04783, "color": "#D3D3D3" }
+    ]
+  }
+]
+
